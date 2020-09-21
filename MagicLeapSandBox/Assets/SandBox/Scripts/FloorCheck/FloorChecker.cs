@@ -7,7 +7,7 @@ using UnityEngine.XR.MagicLeap;
 #endif
 
 
-namespace FriendsMl.Systems.Spatial
+namespace FloorCheck
 {
     /// <summary>
     /// MagicLeapToolsのFloorOnPlaceを改造したクラス.
@@ -27,9 +27,6 @@ namespace FriendsMl.Systems.Spatial
             private set;
         }
 
-        
-        [Tooltip("Content that will be turned on and placed when a suitable location is found.")]
-        [SerializeField] GameObject content;
         
         [Tooltip("Does content's content match it's transform forward?")]
         [SerializeField] bool flippedForward;
@@ -64,19 +61,6 @@ namespace FriendsMl.Systems.Spatial
         //Flow:
         void OnEnable()
         {
-            //we can't operate on own content since it disables the content:
-            if (content == gameObject)
-            {
-                Debug.LogError("StartInOpenArea can not be used on it's own content.  Move the StartInOpenArea to a separate object.", this);
-                enabled = false;
-            }
-
-            //hide content:
-            if (content != null)
-            {
-                content.SetActive(false);
-            }
-
             //sets:
             headLocationHistory = new List<Vector3>();
             headRotationHistory = new List<Quaternion>();
@@ -93,27 +77,6 @@ namespace FriendsMl.Systems.Spatial
             }
 
             HeadActivityDetermination(); 
-
-            // TODO : とりあえずサンプルでここに配置するスクリプトを記述している.
-            (bool hit, Vector3 pos) result = LookingAtFloorDetermination(new Ray(mainCamera.position, mainCamera.forward));
-            if (result.hit)
-            {
-                //place content:
-                if (content != null)
-                {
-                    content.SetActive(true);
-                    content.transform.position = Location;
-
-                    //face user after placement:
-                    Vector3 to = Vector3.Normalize(Location - mainCamera.position);
-                    Vector3 flat = Vector3.ProjectOnPlane(to, Vector3.up);
-                    if (!flippedForward)
-                    {
-                        flat *= -1;
-                    }
-                    content.transform.rotation = Quaternion.LookRotation(flat);
-                }
-            }
         }
         
 

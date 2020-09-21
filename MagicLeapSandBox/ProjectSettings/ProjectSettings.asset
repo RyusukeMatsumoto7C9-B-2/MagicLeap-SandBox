@@ -164,7 +164,8 @@ PlayerSettings:
   resolutionScalingMode: 0
   androidSupportedAspectRatio: 1
   androidMaxAspectRatio: 2.1
-  applicationIdentifier: {}
+  applicationIdentifier:
+    Lumin: com.magicleap.sandbox
   buildNumber: {}
   AndroidBundleVersionCode: 1
   AndroidMinSdkVersion: 19
@@ -599,7 +600,8 @@ PlayerSettings:
   webGLLinkerTarget: 1
   webGLThreadsSupport: 0
   webGLWasmStreaming: 0
-  scriptingDefineSymbols: {}
+  scriptingDefineSymbols:
+    28: ML_RENDERING_VALIDATION
   platformArchitecture: {}
   scriptingBackend:
     Standalone: 0
@@ -678,12 +680,12 @@ PlayerSettings:
     m_ModelFolderPath: 
     m_PortalFolderPath: 
   luminCert:
-    m_CertPath: E:/UnityProjects/MagicLeap-SandBox/MagicLeapSandBox/Assets/SandBox/Certifies/magicleapsandbox.cert
+    m_CertPath: E:/UnityProjects/MagicLeap-SandBox/MagicLeapSandBox/Assets/SandBox/Certifies/friends-ml.cert
     m_SignPackage: 1
   luminIsChannelApp: 0
   luminVersion:
     m_VersionCode: 1
-    m_VersionName: 
+    m_VersionName: 1
   apiCompatibilityLevel: 6
   cloudProjectId: 
   framebufferDepthMemorylessMode: 0
