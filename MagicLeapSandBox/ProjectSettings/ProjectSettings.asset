@@ -120,9 +120,7 @@ PlayerSettings:
     16:9: 1
     Others: 1
   bundleVersion: 0.1
-  preloadedAssets:
-  - {fileID: -2520877604494459254, guid: 80cf85cab31ec9a4bb2cdb9dd955f5d9, type: 2}
-  - {fileID: 11400000, guid: bf15c41f8977521408fd1f0e8f705dd3, type: 2}
+  preloadedAssets: []
   metroInputSource: 0
   wsaTransparentSwapchain: 0
   m_HolographicPauseOnTrackingLoss: 1
@@ -680,7 +678,7 @@ PlayerSettings:
     m_ModelFolderPath: 
     m_PortalFolderPath: 
   luminCert:
-    m_CertPath: E:/UnityProjects/MagicLeap-SandBox/MagicLeapSandBox/Assets/SandBox/Certifies/friends-ml.cert
+    m_CertPath: E:/MagicLeapTheLab/CertificatesFIles/friends-ml/friends-ml.cert
     m_SignPackage: 1
   luminIsChannelApp: 0
   luminVersion:
