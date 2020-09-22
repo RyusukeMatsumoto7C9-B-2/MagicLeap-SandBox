@@ -27,10 +27,6 @@ namespace FloorCheck
             private set;
         }
 
-        
-        [Tooltip("Does content's content match it's transform forward?")]
-        [SerializeField] bool flippedForward;
-        
 
         List<Vector3> headLocationHistory;
         List<Quaternion> headRotationHistory;
