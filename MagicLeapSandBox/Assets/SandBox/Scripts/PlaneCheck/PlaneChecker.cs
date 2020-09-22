@@ -38,6 +38,7 @@ namespace PlaneCheck
         bool headIdle;
         bool placementValid;
  
+        
         void Awake()
         {
             mainCamera = Camera.main.transform;
@@ -67,7 +68,6 @@ namespace PlaneCheck
         }
         
 
-        //Coroutines:
         IEnumerator HeadIdleTimeout()
         {
             yield return new WaitForSeconds(HeadIdleRequiredDuration);
