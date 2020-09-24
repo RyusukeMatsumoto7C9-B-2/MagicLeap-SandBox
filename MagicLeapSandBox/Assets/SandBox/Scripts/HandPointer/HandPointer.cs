@@ -15,8 +15,6 @@ public class HandPointer : MonoBehaviour
 {
 #if PLATFORM_LUMIN
     //Public Variables:
-    [Tooltip("What is providing pose and input?")]
-    public InputDriver inputDriver;
     [Tooltip("Should the pointer stay rigid while not dragging anything?")]
     public bool rigidWhilePointing;
     [Tooltip("What layers should we interact with and ignore.")]
@@ -101,7 +99,7 @@ public class HandPointer : MonoBehaviour
     {
         get
         {
-            return inputDriver.motionSource.position;
+            return forwardObj.position;
         }
     }
 
@@ -112,7 +110,7 @@ public class HandPointer : MonoBehaviour
     {
         get
         {
-            return Vector3.Normalize(Tip - inputDriver.motionSource.position);
+            return Vector3.Normalize(Tip - forwardObj.position);
         }
     }
 
@@ -177,7 +175,7 @@ public class HandPointer : MonoBehaviour
     {
         get
         {
-            return Vector3.Distance(inputDriver.motionSource.position, InternalInteractionPoint);
+            return Vector3.Distance(forwardObj.position, InternalInteractionPoint);
         }
     }
 
@@ -186,7 +184,7 @@ public class HandPointer : MonoBehaviour
         get
         {
             //relative input driver location:
-            Vector3 relative = _mainCamera.transform.InverseTransformPoint(inputDriver.motionSource.position);
+            Vector3 relative = _mainCamera.transform.InverseTransformPoint(forwardObj.position);
 
             //yanked?
             if (_dragging && allowYanking)
@@ -204,11 +202,11 @@ public class HandPointer : MonoBehaviour
             //apply offset:
             if (_yanked)
             {
-                return inputDriver.motionSource.position + inputDriver.motionSource.forward * yankedDistance;
+                return forwardObj.position + forwardObj.forward * yankedDistance;
             }
             else
             {
-                return inputDriver.motionSource.position + inputDriver.motionSource.forward * _currentDistance;
+                return forwardObj.position + forwardObj.forward * _currentDistance;
             }
         }
     }
@@ -245,65 +243,33 @@ public class HandPointer : MonoBehaviour
 
         //sets:
         _curve = new Curve();
-        Normal = forwardObj.position - inputDriver.motionSource.position;
-//        Normal = inputDriver.motionSource.forward * -1;
+        Normal = forwardObj.forward * -1;
 
         //establish distance:
         _currentDistance = idleDistance;
 
         //input active?
-        if (!inputDriver.Active)
+        // TODO : 何をやってるものか調べる必要がある.
+        /*
+        if (!forwardObj.Active)
         {
             HandleDeactivate(null);
         }
+    */
     }
 
     //Flow:
     private void OnEnable()
     {
-        //hook:
-        inputDriver.OnActivate += HandleActivate;
-        inputDriver.OnDeactivate += HandleDeactivate;
-        inputDriver.OnFire0Down += HandleFire0Down;
-        inputDriver.OnFire0Up += HandleFire0Up;
-        inputDriver.OnFire1Down += HandleFire1Down;
-        inputDriver.OnFire1Up += HandleFire1Up;
-        inputDriver.OnFire2Down += HandleFire2Down;
-        inputDriver.OnFire2Up += HandleFire2Up;
-        inputDriver.OnUp += HandleUp;
-        inputDriver.OnDown += HandleDown;
-        inputDriver.OnLeft += HandleLeft;
-        inputDriver.OnRight += HandleRight;
-        inputDriver.OnRadialDrag += HandleRotate;
     }
 
     private void OnDisable()
     {
-        //unhook:
-        inputDriver.OnActivate -= HandleActivate;
-        inputDriver.OnDeactivate -= HandleDeactivate;
-        inputDriver.OnFire0Down -= HandleFire0Down;
-        inputDriver.OnFire0Up -= HandleFire0Up;
-        inputDriver.OnFire1Down -= HandleFire1Down;
-        inputDriver.OnFire1Up -= HandleFire1Up;
-        inputDriver.OnFire2Down -= HandleFire2Down;
-        inputDriver.OnFire2Up -= HandleFire2Up;
-        inputDriver.OnUp -= HandleUp;
-        inputDriver.OnDown -= HandleDown;
-        inputDriver.OnLeft -= HandleLeft;
-        inputDriver.OnRight -= HandleRight;
-        inputDriver.OnRadialDrag -= HandleRotate;
     }
 
     //Loops:
     private void Update()
     {
-        //don't process if the driver is inactive:
-        if (!inputDriver.Active)
-        {
-            return;
-        }
-
         //swap bendy status if needed:
         if (!_dragging && rigidWhilePointing)
         {
@@ -342,7 +308,7 @@ public class HandPointer : MonoBehaviour
 
             //pointer stretch:
             //stretch amount:
-            float motionSourceDistance = Vector3.Distance(inputDriver.motionSource.position, _mainCamera.transform.position);
+            float motionSourceDistance = Vector3.Distance(forwardObj.position, _mainCamera.transform.position);
             float motionSourceTravelPercentage = Mathf.Clamp01(motionSourceDistance / _maxArmLength);
 
             //stretch the reach of the pointer:
@@ -357,7 +323,7 @@ public class HandPointer : MonoBehaviour
             }
 
             //effort modification:
-            float currentMotionSourceDistance = Vector3.Distance(_mainCamera.transform.position, inputDriver.motionSource.position);
+            float currentMotionSourceDistance = Vector3.Distance(_mainCamera.transform.position, forwardObj.position);
             float motionSourceTraveledDistance = currentMotionSourceDistance - _selectedMotionSourceDistanceToHead;
             float motionSourceEffortPercentage = motionSourceTraveledDistance / _maxArmTravelDistance;
             float clampedPercentage = Mathf.Clamp(motionSourceEffortPercentage, -1, 1);
@@ -389,8 +355,8 @@ public class HandPointer : MonoBehaviour
         if (Status != PointerStatus.Selecting) return;
 
         //changes since selecting:
-        float movedDistance = Vector3.Distance(_selectedMotionSourceLocation, inputDriver.motionSource.position);
-        float angleDistance = Quaternion.Angle(_selectedMotionSourceRotation, inputDriver.motionSource.rotation);
+        float movedDistance = Vector3.Distance(_selectedMotionSourceLocation, forwardObj.position);
+        float angleDistance = Quaternion.Angle(_selectedMotionSourceRotation, forwardObj.rotation);
 
         //did we start dragging?
         if (movedDistance > dragMovementThreshold || angleDistance > dragRotationThreshold)
@@ -399,7 +365,7 @@ public class HandPointer : MonoBehaviour
             _yankThreshold = minBodyDistance;
 
             //if we were already within the yank threshold add a tiny buffer so we can still have a yank threshold:
-            Vector3 relative = _mainCamera.transform.InverseTransformPoint(inputDriver.motionSource.position);
+            Vector3 relative = _mainCamera.transform.InverseTransformPoint(forwardObj.position);
             if (relative.z <= minBodyDistance)
             {
                 _yankThreshold -= _minBodyDistanceBuffer;
@@ -425,7 +391,7 @@ public class HandPointer : MonoBehaviour
     private void StartDrag()
     {
         //enable bend:
-        _bendPredictionPoint = Vector3.Lerp(inputDriver.motionSource.position, InternalInteractionPoint, bendPointPercentage);
+        _bendPredictionPoint = Vector3.Lerp(forwardObj.position, InternalInteractionPoint, bendPointPercentage);
         _bendPointHistory.Clear();
         _bendy = true;
 
@@ -481,7 +447,7 @@ public class HandPointer : MonoBehaviour
         RaycastHit closestRaycastHit = new RaycastHit();
         RaycastHit secondClosestRaycastHit = new RaycastHit();
 
-        RaycastHit[] hits = Physics.RaycastAll(inputDriver.motionSource.position, Vector3.Normalize(InternalInteractionPoint - inputDriver.motionSource.position), _currentDistance, layerMask);
+        RaycastHit[] hits = Physics.RaycastAll(forwardObj.position, Vector3.Normalize(InternalInteractionPoint - forwardObj.position), _currentDistance, layerMask);
         if (hits.Length > 0)
         {
             //find closest:
@@ -539,7 +505,7 @@ public class HandPointer : MonoBehaviour
             if (!ignoreBecauseDragTarget)
             {
                 //adjust hit information:
-                Vector3 backup = Vector3.Normalize(closestRaycastHit.point - inputDriver.motionSource.position) * surfaceOffset;
+                Vector3 backup = Vector3.Normalize(closestRaycastHit.point - forwardObj.position) * surfaceOffset;
                 closestRaycastHit.point -= backup;
                 InternalInteractionPoint = closestRaycastHit.point;
 
@@ -556,7 +522,7 @@ public class HandPointer : MonoBehaviour
                 //are we hitting something behind the target?
                 if (secondClosestRaycastHit.collider != closestRaycastHit.collider && secondClosestRaycastHit.collider != null)
                 {
-                    Vector3 backup = Vector3.Normalize(secondClosestRaycastHit.point - inputDriver.motionSource.position) * surfaceOffset;
+                    Vector3 backup = Vector3.Normalize(secondClosestRaycastHit.point - forwardObj.position) * surfaceOffset;
                     InternalInteractionPoint = secondClosestRaycastHit.point;
                 }
             }
@@ -601,7 +567,7 @@ public class HandPointer : MonoBehaviour
         }
 
         //adjust hit information:
-        Normal = inputDriver.motionSource.forward * -1;
+        Normal = forwardObj.forward * -1;
     }
 
     private void UpdateLineVisuals()
@@ -626,7 +592,7 @@ public class HandPointer : MonoBehaviour
         if (_bendy)
         {
             //add bend point to history:
-            _bendPointHistory.Add(Vector3.Lerp(inputDriver.motionSource.position, InternalInteractionPoint, bendPointPercentage));
+            _bendPointHistory.Add(Vector3.Lerp(forwardObj.position, InternalInteractionPoint, bendPointPercentage));
             if (_bendPointHistory.Count > _bendPointHistoryCount)
             {
                 _bendPointHistory.RemoveAt(0);
@@ -657,12 +623,12 @@ public class HandPointer : MonoBehaviour
             Vector3 calculatedBendPredictionPoint = averageBendPoint + (averageVelocity * bendPredictionMultiplier);
 
             //clamp bend point to bendPointPercentage if it ends up behind the motion source:
-            Vector3 toEnd = Vector3.Normalize(InternalInteractionPoint - inputDriver.motionSource.position);
-            Vector3 toBend = Vector3.Normalize(calculatedBendPredictionPoint - inputDriver.motionSource.position);
+            Vector3 toEnd = Vector3.Normalize(InternalInteractionPoint - forwardObj.position);
+            Vector3 toBend = Vector3.Normalize(calculatedBendPredictionPoint - forwardObj.position);
 
             if (Vector3.Dot(toEnd, toBend) < 0)
             {
-                calculatedBendPredictionPoint = Vector3.Lerp(inputDriver.motionSource.position, InternalInteractionPoint, bendPointPercentage);
+                calculatedBendPredictionPoint = Vector3.Lerp(forwardObj.position, InternalInteractionPoint, bendPointPercentage);
             }
 
             //smooth prediction:
@@ -685,9 +651,9 @@ public class HandPointer : MonoBehaviour
                 }
 
                 //find point on curve:
-                _curve.Update(inputDriver.motionSource.position, _bendPredictionPoint, curveEndLocation, lineResolution);
+                _curve.Update(forwardObj.position, _bendPredictionPoint, curveEndLocation, lineResolution);
                 Vector3 pointOnCurve = _curve.GetPosition(percentage);
-                //Vector3 pointOnCurve = CurveUtilities.GetPointRaw(inputDriver.motionSource.position, _bendPredictionPoint, curveEndLocation, percentage);
+                //Vector3 pointOnCurve = CurveUtilities.GetPointRaw(forwardObj.position, _bendPredictionPoint, curveEndLocation, percentage);
 
                 //set line renderer position:
                 _lineRenderer.SetPosition(i, pointOnCurve);
@@ -696,7 +662,7 @@ public class HandPointer : MonoBehaviour
         else
         {
             //rigid:
-            _lineRenderer.SetPosition(0, inputDriver.motionSource.position);
+            _lineRenderer.SetPosition(0, forwardObj.position);
 
             //if dragging then slant the line to the initial tip location otherwise connect to the spring:
             Vector3 lineEndLocation = Vector3.zero;
@@ -746,9 +712,9 @@ public class HandPointer : MonoBehaviour
             Status = PointerStatus.Selecting;
 
             //cache where the motion source is for later delta evaluations:
-            _selectedMotionSourceLocation = inputDriver.motionSource.position;
-            _selectedMotionSourceRotation = inputDriver.motionSource.rotation;
-            _selectedMotionSourceDistanceToHead = Vector3.Distance(_mainCamera.transform.position, inputDriver.motionSource.position);
+            _selectedMotionSourceLocation = forwardObj.position;
+            _selectedMotionSourceRotation = forwardObj.rotation;
+            _selectedMotionSourceDistanceToHead = Vector3.Distance(_mainCamera.transform.position, forwardObj.position);
 
             //interactions:
             _targetedInputReceiver.Fire0DownReceived(gameObject);
