@@ -41,9 +41,9 @@ MonoBehaviour:
   - name: DrmCertificates
     enabled: 0
   - name: GesturesConfig
-    enabled: 0
+    enabled: 1
   - name: GesturesSubscribe
-    enabled: 0
+    enabled: 1
   - name: HandMesh
     enabled: 0
   - name: IdentityRead
