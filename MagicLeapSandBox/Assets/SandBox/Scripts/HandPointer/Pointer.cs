@@ -10,6 +10,8 @@ namespace SandBox.Scripts.HandPointer
         [SerializeField] Transform source;
         [SerializeField] LineRenderer lr;
 
+        Vector3 lastStartPos = Vector3.zero;
+
         void Start()
         {
             
@@ -23,14 +25,14 @@ namespace SandBox.Scripts.HandPointer
             }
 
             var right = HandInput.Right;
-            
-            var indexKnuckle = right.Skeleton.Index.Knuckle.positionFiltered;
-            var middleKnuckle = right.Skeleton.Middle.Knuckle.positionFiltered;
-            var wristCenter = right.Skeleton.WristCenter.positionFiltered;
+            // 人差し指の根元と親指の根元の中間座標を起点として
+            Vector3 tempStartPos = Vector3.Lerp(right.Skeleton.Thumb.Knuckle.positionFiltered, right.Skeleton.Index.Knuckle.positionFiltered, 0.5f);
 
-            Vector3 targetPos = middleKnuckle + (source.forward * 2f);
-            lr.SetPositions(new []{middleKnuckle, targetPos});
-            
+            Vector3 startPos = Vector3.Lerp(lastStartPos, tempStartPos, 0.5f);
+            lastStartPos = tempStartPos;
+            // 方向はWristCenterから見たStart?
+            lr.SetPositions(new []{startPos, startPos + (source.forward.normalized * 2f)});
         }
+
     }
 }

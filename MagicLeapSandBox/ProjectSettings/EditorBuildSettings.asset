@@ -11,9 +11,12 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/SandBox/Scenes/PlaneCheck.unity
     guid: 12c580b12f1419e4b9ddf775725e39d4
-  - enabled: 1
+  - enabled: 0
     path: Assets/SandBox/Scenes/Navigation.unity
     guid: 767d3a204646b5a4298bc38d00ac6cb6
+  - enabled: 1
+    path: Assets/SandBox/Scenes/HandPointer.unity
+    guid: d3ef4da5c50da814dac9ff8614969072
   m_configObjects:
     com.unity.xr.magicleap.magic_leap_settings: {fileID: 11400000, guid: bf15c41f8977521408fd1f0e8f705dd3,
       type: 2}
