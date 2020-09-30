@@ -17,41 +17,59 @@ public class HandPointer : MonoBehaviour
     //Public Variables:
     [Tooltip("Should the pointer stay rigid while not dragging anything?")]
     public bool rigidWhilePointing;
+    
     [Tooltip("What layers should we interact with and ignore.")]
     public LayerMask layerMask;
+
     [Tooltip("How far from a collision on a surface should the pointer hover.")]
     public float surfaceOffset;
+    
     [Tooltip("How far is the pointer when it is not targeting.")]
     public float idleDistance = 1;
+    
     [Tooltip("How far can the pointer go.")]
     public float maxDistance = 2;
+    
     [Tooltip("Closest distance things can be pulled in.")]
     public float minDistance = .4f;
+    
     [Tooltip("How far does the motionSource need to move when selecting to be considered a drag.")]
     public float dragMovementThreshold = 0.01f;
+    
     [Tooltip("How far does the motionSource need to rotate (in degrees) when selecting to be considered a drag.")]
     public float dragRotationThreshold = 1f;
+    
     [Tooltip("How many points should the line be made out of.")]
     public int lineResolution = 20;
+    
     [Tooltip("Simulates weight of the bendy pointer.")]
     public float bendyWeightMultiplier = 1;
+    
     [Tooltip("At what percentage along the pointer should we bend.")]
     [Range(0, 1)]
     public float bendPointPercentage = .9f;
+
     [Tooltip("How much to exaggerate the bend.")]
     public float bendPredictionMultiplier = 14;
+    
     [Tooltip("Allow for the ability to bring something in very close with little effort by simply dragging in close to the body.")]
     public bool allowYanking = true;
+    
     [Tooltip("If yanking is allowed this will be the final distance from the pointer.")]
     public float yankedDistance = 0.0889f;
+    
     [Tooltip("If yanking is allowed this distance is the minimum distance from the body before yanking triggers.")]
     public float minBodyDistance = 0.44f;
+    
     [Tooltip("Process reachCurve to make grabbing far away things easier?")]
     public bool allowReachStretching = true;
+    
     [Tooltip("Defines stretch evaluation for pointer when reaching while not dragging.")]
     public AnimationCurve reachStretchCurve;
+    
     [Tooltip("Process effortMagnificationCurve to make moving things in and out easier?")]
     public bool allowEffortMagnification = true;
+    
     [Tooltip("Defines effort magnification evaluation so an object can be more easily moved further distances.")]
     public AnimationCurve effortMagnificationCurve;
 
@@ -170,6 +188,8 @@ public class HandPointer : MonoBehaviour
     private float _yankThreshold;
     private bool _yanked;
 
+    Vector3 lastNormal = Vector3.zero;
+    
     //Private Properties:
     private float Length
     {
@@ -183,6 +203,7 @@ public class HandPointer : MonoBehaviour
     {
         get
         {
+            /*
             //relative input driver location:
             Vector3 relative = _mainCamera.transform.InverseTransformPoint(forwardObj.position);
 
@@ -198,6 +219,7 @@ public class HandPointer : MonoBehaviour
                     _yanked = false;
                 }
             }
+            */
 
             //apply offset:
             if (_yanked)
@@ -239,7 +261,7 @@ public class HandPointer : MonoBehaviour
 
         //refs:
         _lineRenderer = GetComponent<LineRenderer>();
-        _mainCamera = Camera.main;
+        //_mainCamera = Camera.main;
 
         //sets:
         _curve = new Curve();
@@ -250,12 +272,10 @@ public class HandPointer : MonoBehaviour
 
         //input active?
         // TODO : 何をやってるものか調べる必要がある.
-        /*
-        if (!forwardObj.Active)
+        if (!forwardObj.gameObject.activeSelf)
         {
             HandleDeactivate(null);
         }
-    */
     }
 
     //Flow:
@@ -308,12 +328,16 @@ public class HandPointer : MonoBehaviour
 
             //pointer stretch:
             //stretch amount:
+            /*
             float motionSourceDistance = Vector3.Distance(forwardObj.position, _mainCamera.transform.position);
             float motionSourceTravelPercentage = Mathf.Clamp01(motionSourceDistance / _maxArmLength);
+            */
 
             //stretch the reach of the pointer:
+            /*
             float stretchValue = Mathf.Clamp01(reachStretchCurve.Evaluate(motionSourceTravelPercentage));
             _currentDistance = Mathf.Lerp(idleDistance, maxDistance, stretchValue);
+        */
         }
         else
         {
@@ -323,12 +347,15 @@ public class HandPointer : MonoBehaviour
             }
 
             //effort modification:
+            /*
             float currentMotionSourceDistance = Vector3.Distance(_mainCamera.transform.position, forwardObj.position);
             float motionSourceTraveledDistance = currentMotionSourceDistance - _selectedMotionSourceDistanceToHead;
             float motionSourceEffortPercentage = motionSourceTraveledDistance / _maxArmTravelDistance;
             float clampedPercentage = Mathf.Clamp(motionSourceEffortPercentage, -1, 1);
             float effortCurveEvaluation = Mathf.Clamp01(effortMagnificationCurve.Evaluate(Mathf.Abs(clampedPercentage)));
+            */
 
+            /*
             if (Mathf.Sign(clampedPercentage) == 1)
             {
                 _currentDistance = Mathf.Lerp(_dragInitialDistance, maxDistance, effortCurveEvaluation);
@@ -337,6 +364,7 @@ public class HandPointer : MonoBehaviour
             {
                 _currentDistance = Mathf.Lerp(_dragInitialDistance, minDistance, effortCurveEvaluation);
             }
+            */
 
             //apply nudge:
             _currentDistance += _currentNudge;
@@ -365,11 +393,13 @@ public class HandPointer : MonoBehaviour
             _yankThreshold = minBodyDistance;
 
             //if we were already within the yank threshold add a tiny buffer so we can still have a yank threshold:
+            /*
             Vector3 relative = _mainCamera.transform.InverseTransformPoint(forwardObj.position);
             if (relative.z <= minBodyDistance)
             {
                 _yankThreshold -= _minBodyDistanceBuffer;
             }
+            */
 
             StartDrag();
         }
@@ -668,10 +698,12 @@ public class HandPointer : MonoBehaviour
             Vector3 lineEndLocation = Vector3.zero;
             if (_dragging)
             {
+                Debug.Log("kokodayo");
                 lineEndLocation = _lastSelection.transform.TransformPoint(_draggedTipLocalLocation);
             }
             else
             {
+                Debug.Log("imakoko");
                 lineEndLocation = InternalInteractionPoint;
 
             }
@@ -682,17 +714,7 @@ public class HandPointer : MonoBehaviour
         //synchronize tip location:
         Tip = _lineRenderer.GetPosition(_lineRenderer.positionCount - 1);
     }
-
-    //Event Handlers:
-    private void HandleActivate(InputDriver sender)
-    {
-        //show renderers:
-        foreach (var item in GetComponentsInChildren<Renderer>())
-        {
-            item.enabled = true;
-        }
-    }
-
+    
     private void HandleDeactivate(InputDriver sender)
     {
         //hide renderers:
@@ -701,155 +723,6 @@ public class HandPointer : MonoBehaviour
             item.enabled = false;
         }
     }
-
-    private void HandleFire0Down(InputDriver sender)
-    {
-        if (Target != null)
-        {
-            _lastSelection = Target;
-
-            //status:
-            Status = PointerStatus.Selecting;
-
-            //cache where the motion source is for later delta evaluations:
-            _selectedMotionSourceLocation = forwardObj.position;
-            _selectedMotionSourceRotation = forwardObj.rotation;
-            _selectedMotionSourceDistanceToHead = Vector3.Distance(_mainCamera.transform.position, forwardObj.position);
-
-            //interactions:
-            _targetedInputReceiver.Fire0DownReceived(gameObject);
-        }
-    }
-
-    private void HandleFire0Up(InputDriver sender)
-    {
-        if (Target != null)
-        {
-            //status:
-            Status = PointerStatus.Targeting;
-
-            //interactions:
-            _targetedInputReceiver?.Fire0UpReceived(gameObject);
-        }
-
-        StopDrag();
-    }
-
-    private void HandleUp(InputDriver sender)
-    {
-        //nudge - should initiate dragging if we aren't already doing so:
-        if (Status == PointerStatus.Selecting || Status == PointerStatus.Dragging)
-        {
-            if (!_dragging)
-            {
-                StartDrag();
-            }
-
-            //push distance out:
-            _currentNudge += _nudgeAmount;
-
-            //clamp:
-            if (_currentDistance + _currentNudge > maxDistance)
-            {
-                _currentNudge = maxDistance - _currentDistance;
-            }
-        }
-
-        if (Target != null || Status == PointerStatus.Dragging)
-        {
-            //interactions:
-            _targetedInputReceiver?.UpReceived(gameObject);
-        }
-    }
-
-    private void HandleDown(InputDriver sender)
-    {
-        //nudge - should initiate dragging if we aren't already doing so:
-        if (Status == PointerStatus.Selecting || Status == PointerStatus.Dragging)
-        {
-            if (!_dragging)
-            {
-                StartDrag();
-            }
-
-            //pull distance in:
-            _currentNudge -= _nudgeAmount;
-
-            //clamp:
-            if (_currentDistance + _currentNudge < minDistance)
-            {
-                _currentNudge = minDistance - _currentDistance;
-            }
-        }
-
-        if (Target != null || Status == PointerStatus.Dragging)
-        {
-            //interactions:
-            _targetedInputReceiver?.DownReceived(gameObject);
-        }
-    }
-
-    private void HandleLeft(InputDriver sender)
-    {
-        if (Target != null || Status == PointerStatus.Dragging)
-        {
-            //interactions:
-            _targetedInputReceiver?.LeftReceived(gameObject);
-        }
-    }
-
-    private void HandleRight(InputDriver sender)
-    {
-        if (Target != null || Status == PointerStatus.Dragging)
-        {
-            //interactions:
-            _targetedInputReceiver?.RightReceived(gameObject);
-        }
-    }
-
-    private void HandleRotate(float angleDelta, InputDriver sender)
-    {
-        if (Target != null || Status == PointerStatus.Dragging)
-        {
-            //interactions:
-            _targetedInputReceiver?.RadialDragReceived(angleDelta, gameObject);
-        }
-    }
-
-    private void HandleFire1Down(InputDriver sender)
-    {
-        if (Target != null || Status == PointerStatus.Dragging)
-        {
-            //interactions:
-            _targetedInputReceiver?.Fire1DownReceived(gameObject);
-        }
-    }
-
-    private void HandleFire1Up(InputDriver sender)
-    {
-        if (Target != null || Status == PointerStatus.Dragging)
-        {
-            //interactions:
-            _targetedInputReceiver?.Fire1UpReceived(gameObject);
-        }
-    }
-
-    private void HandleFire2Down(InputDriver sender)
-    {
-        if (Target != null || Status == PointerStatus.Dragging)
-        {
-            //interactions:
-            _targetedInputReceiver?.Fire2DownReceived(gameObject);
-        }
-    }
-
-    private void HandleFire2Up(InputDriver sender)
-    {
-        if (Target != null || Status == PointerStatus.Dragging)
-        {
-            //interactions:
-            _targetedInputReceiver?.Fire2UpReceived(gameObject);
-        }
-    }
+    
 #endif
 }

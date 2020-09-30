@@ -2377,6 +2377,7 @@ GameObject:
   - component: {fileID: 695030256}
   - component: {fileID: 695030258}
   - component: {fileID: 695030257}
+  - component: {fileID: 695030259}
   m_Layer: 0
   m_Name: Right
   m_TagString: Untagged
@@ -2435,7 +2436,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 695030253}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3c5a29bab9bd68a4eb205a4a0eb5098b, type: 3}
   m_Name: 
@@ -2556,7 +2557,9 @@ LineRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Positions: []
+  m_Positions:
+  - {x: 0, y: 0, z: 0}
+  - {x: 0, y: 0, z: 0}
   m_Parameters:
     serializedVersion: 3
     widthMultiplier: 1
@@ -2612,6 +2615,20 @@ LineRenderer:
     generateLightingData: 0
   m_UseWorldSpace: 1
   m_Loop: 0
+--- !u!114 &695030259
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 695030253}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f41a8c02891b46499105fc84559bfd3f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  source: {fileID: 898000748}
+  lr: {fileID: 695030258}
 --- !u!1001 &699465727
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4562,6 +4579,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1619190597}
   - component: {fileID: 1619190599}
+  - component: {fileID: 1619190598}
   m_Layer: 0
   m_Name: HandInput
   m_TagString: Untagged
@@ -4583,6 +4601,21 @@ Transform:
   m_Father: {fileID: 1138925752}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1619190598
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1619190596}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 530faf594e0304a51a14b4f11a3f6d33, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _trackedKeyPoses: 0
+  _keyPointFilterLevel: 2
+  _poseFilterLevel: 2
 --- !u!114 &1619190599
 MonoBehaviour:
   m_ObjectHideFlags: 0
