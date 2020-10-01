@@ -30,8 +30,13 @@ namespace SandBox.Scripts.HandPointer
 
             Vector3 startPos = Vector3.Lerp(lastStartPos, tempStartPos, 0.5f);
             lastStartPos = tempStartPos;
+
+            Vector3 targetPos = startPos + (source.forward.normalized * 2f);
+            Vector3 a = (startPos - source.position).normalized;
+            targetPos = targetPos + (a * Vector3.Distance(startPos, source.position));
+            
             // 方向はWristCenterから見たStart?
-            lr.SetPositions(new []{startPos, startPos + (source.forward.normalized * 2f)});
+            lr.SetPositions(new []{startPos, targetPos});
         }
 
     }
