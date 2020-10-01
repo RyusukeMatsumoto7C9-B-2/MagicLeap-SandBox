@@ -2,6 +2,7 @@
 using MagicLeap.Core;
 using MagicLeapTools;
 using UnityEngine;
+using UnityEngine.XR.MagicLeap;
 
 namespace SandBox.Scripts.HandPointer
 {
@@ -12,17 +13,27 @@ namespace SandBox.Scripts.HandPointer
 
         Vector3 lastStartPos = Vector3.zero;
 
+        //Vector3 lastGazeRay = Vector3.zero;
+        
         void Start()
         {
-            
+            MLEyes.Start();
         }
 
+        
         void Update()
         {
-            if (!HandInput.Ready)
+            if (!HandInput.Ready && !MLEyes.IsStarted)
             {
                 return;
             }
+
+            //EyeTracking.
+            /*
+            Vector3 gazeRay = Vector3.Lerp(MLEyes.RightEye.ForwardGaze, MLEyes.LeftEye.ForwardGaze, 0.5f).normalized;
+            Vector3 currentRay = Vector3.Lerp(lastGazeRay, gazeRay, Time.deltaTime);
+            lastGazeRay = gazeRay;
+            */
 
             var right = HandInput.Right;
             // 人差し指の根元と親指の根元の中間座標を起点として
@@ -32,7 +43,8 @@ namespace SandBox.Scripts.HandPointer
             lastStartPos = tempStartPos;
 
             Vector3 targetPos = startPos + (source.forward.normalized * 2f);
-            Vector3 a = (startPos - source.position).normalized;
+            //Vector3 targetPos = startPos + (currentRay * 2f);
+            Vector3 a = (startPos - MLEyes.FixationPoint).normalized;
             targetPos = targetPos + (a * Vector3.Distance(startPos, source.position));
             
             // 方向はWristCenterから見たStart?
