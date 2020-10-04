@@ -16,8 +16,6 @@ namespace EyeTracking
         void Start()
         {
             MLEyes.Start();
-
-            audioSource.pitch = 3f;
         }
 
         
