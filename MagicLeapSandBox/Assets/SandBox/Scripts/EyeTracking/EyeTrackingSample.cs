@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.XR.MagicLeap;
 
 namespace EyeTracking
@@ -18,7 +19,13 @@ namespace EyeTracking
             MLEyes.Start();
         }
 
-        
+
+        void OnDestroy()
+        {
+            MLEyes.Stop();
+        }
+
+
         void Update()
         {
             if (!MLEyes.IsStarted) return;
@@ -35,7 +42,6 @@ namespace EyeTracking
                     rightEyeTarget.gameObject.SetActive(true);
                     leftEyeTarget.position = MLEyes.LeftEye.Center + (MLEyes.LeftEye.ForwardGaze.normalized * TargetDistance);
                     rightEyeTarget.position = MLEyes.RightEye.Center + (MLEyes.RightEye.ForwardGaze.normalized * TargetDistance);
-
                     if ((MLEyes.LeftEye.IsBlinking || MLEyes.RightEye.IsBlinking) && !audioSource.isPlaying)
                         audioSource.PlayOneShot(blinkSound);
                     break; 
