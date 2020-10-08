@@ -1,6 +1,4 @@
-﻿using System;
-using MagicLeap.Core;
-using MagicLeapTools;
+﻿using MagicLeapTools;
 using UnityEngine;
 using UnityEngine.XR.MagicLeap;
 
@@ -14,6 +12,12 @@ namespace SandBox.Scripts.HandPointer
     {
         readonly float PointerRayDistance = 2f;
 
+        private struct PointerStartPosition
+        {
+            public Vector3 left;
+            public Vector3 right;
+        }
+
 
         // Pointerのステート.
         public enum HandPointerState
@@ -25,12 +29,13 @@ namespace SandBox.Scripts.HandPointer
 
 
         [SerializeField] Transform mainCamera;
-        [SerializeField] LineRenderer lr;
+        [SerializeField] LineRenderer lLineRenderer;
+        [SerializeField] LineRenderer rLineRenderer;
         [SerializeField] float speed = 1f;
 
         public HandPointerState State { get; private set; } = HandPointerState.None;
 
-        Vector3 lastStartPos = Vector3.zero;
+        PointerStartPosition lastStartPos;
         Vector3 lastTargetPos = Vector3.zero;
 
         /// <summary>
@@ -45,7 +50,10 @@ namespace SandBox.Scripts.HandPointer
         void Start()
         {
             MLEyes.Start();
+            lLineRenderer = CreateLineRenderer("LeftLineRenderer");
+            rLineRenderer = CreateLineRenderer("RightLineRenderer");
             
+            lastStartPos = new PointerStartPosition() {left = Vector3.zero, right = Vector3.zero};
         }
 
         
@@ -53,15 +61,13 @@ namespace SandBox.Scripts.HandPointer
         {
             if (!HandInput.Ready)
             {
-                lr.enabled = false;
+                lLineRenderer.enabled = false;
+                rLineRenderer.enabled = false;
                 return;
             }
-            lr.enabled = true;
-            
-            var right = HandInput.Right;
-            // 人差し指の根元と親指の根元の中間座標を起点として
-            Vector3 tempStartPos = Vector3.Lerp(right.Skeleton.Thumb.Knuckle.positionFiltered, right.Skeleton.Index.Knuckle.positionFiltered, 0.5f);
-            lastStartPos = tempStartPos;
+            lLineRenderer.enabled = HandInput.Left.Visible;
+            rLineRenderer.enabled = HandInput.Right.Visible;
+
             
             Vector3 targetPos = Vector3.zero;
             (bool isValid, Vector3 pos) eyeTrackingTarget = GetEytTrackingTargetPos();
@@ -86,12 +92,44 @@ namespace SandBox.Scripts.HandPointer
             targetPos = Vector3.Lerp(lastTargetPos, targetPos, Time.deltaTime * speed);
             lastTargetPos = targetPos;
 
-            // Rayのスタート位置.
-            Vector3 startPos = Vector3.Lerp(lastStartPos, tempStartPos, 0.5f);
+            // Rayのスタート位置計算.
+            PointerStartPosition startPosition = new PointerStartPosition()
+            {
+                left = Vector3.Lerp(lastStartPos.left, GetRayStartPosition(HandInput.Left), 0.5f),
+                right = Vector3.Lerp(lastStartPos.right, GetRayStartPosition(HandInput.Right), 0.5f)
+            };
+            lastStartPos = startPosition;
             
             // Rayの描画、まだRaycastとかはやってない.
-            lr.SetPositions(new []{startPos, targetPos});
+            lLineRenderer.SetPositions(new []{startPosition.left, targetPos});
+            rLineRenderer.SetPositions(new []{startPosition.right, targetPos});
         }
+
+
+        /// <summary>
+        /// LineRendererを作成.
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        LineRenderer CreateLineRenderer(
+            string name)
+        {
+            var ret = GameObject.Instantiate(new GameObject(name), transform).AddComponent<LineRenderer>();
+            ret.startWidth = 0.01f;
+            ret.endWidth = 0.01f;
+            ret.enabled = false;
+            return ret;
+        }
+        
+
+        /// <summary>
+        /// 人差し指の根元と親指の根元の中間座標を起点として.
+        /// </summary>
+        /// <param name="hand"></param>
+        /// <returns></returns>
+        Vector3 GetRayStartPosition(ManagedHand hand)
+            => Vector3.Lerp(hand.Skeleton.Thumb.Knuckle.positionFiltered, hand.Skeleton.Index.Knuckle.positionFiltered, 0.5f);
+
 
 
         /// <summary>
