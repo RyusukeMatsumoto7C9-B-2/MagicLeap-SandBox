@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using MagicLeapTools;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.XR.MagicLeap;
 
 namespace SandBox.Scripts.HandPointer
@@ -9,9 +11,9 @@ namespace SandBox.Scripts.HandPointer
     /// ハンドトラッキングでのポインター.
     /// こいつだけで両手分の処理を行いたい.
     /// </summary>
-    public class HandPointer : MonoBehaviour
+    public class HandPointer : MonoBehaviour, IHandPointer
     {
-        readonly float PointerRayDistance = 2f;
+        public class OnSelectEvent : UnityEvent<(Vector3, GameObject)> { }
 
         private struct PointerStartPosition
         {
@@ -24,6 +26,7 @@ namespace SandBox.Scripts.HandPointer
         public enum HandPointerState
         {
             None,
+            Valid,
             NoSelected,
             Selected,
         }
@@ -33,89 +36,141 @@ namespace SandBox.Scripts.HandPointer
         [SerializeField] float speed = 1f;
 
         public HandPointerState State { get; private set; } = HandPointerState.None;
+        public float PointerRayDistance { get; set; } = 2f;
+        public MLHandTracking.HandKeyPose SelectKeyPose { get; set; } = MLHandTracking.HandKeyPose.Pinch;
+        public MLHandTracking.HandKeyPose RayDrawKeyPose { get; set; } = MLHandTracking.HandKeyPose.OpenHand;
+        OnSelectEvent onSelect = new OnSelectEvent();
 
         LineRenderer lLineRenderer;
         LineRenderer rLineRenderer;
-        PointerStartPosition lastStartPos;
-        Vector3 lastTargetPos = Vector3.zero;
+        Vector3 lastTargetPosition = Vector3.zero;
+        Vector3 currentTargetPosition = Vector3.zero;
+        PointerStartPosition lastStartPosition;
+        PointerStartPosition currentStartPosition;
 
-        Func<bool> selectFunc;
-
-
+        
         /// <summary>
         /// Eyeトラッキングが有効か否か.
         /// </summary>
         bool IsEyeTrackingValid => MLEyes.IsStarted && MLEyes.CalibrationStatus == MLEyes.Calibration.Good;
-        
 
-        // TODO : 後で使う,Eyeトラッキングで瞬きしたときに荒ぶるから.
-        //Vector3 lastGazeRay = Vector3.zero;
         
         void Start()
         {
+            if (HandInput.Ready)
+            {
+                HandInput.Right.Gesture.OnKeyPoseChanged += OnHandGesturePoseChanged;
+                HandInput.Left.Gesture.OnKeyPoseChanged += OnHandGesturePoseChanged;
+            }
+            else
+            {
+                HandInput.OnReady += () =>
+                {
+                    HandInput.Right.Gesture.OnKeyPoseChanged += OnHandGesturePoseChanged;
+                    HandInput.Left.Gesture.OnKeyPoseChanged += OnHandGesturePoseChanged;
+                };
+            }
+
             MLEyes.Start();
             lLineRenderer = CreateLineRenderer("LeftLineRenderer");
             rLineRenderer = CreateLineRenderer("RightLineRenderer");
             
-            lastStartPos = new PointerStartPosition() {left = Vector3.zero, right = Vector3.zero};
+            lastStartPosition = new PointerStartPosition() {left = Vector3.zero, right = Vector3.zero};
         }
 
         
         void Update()
         {
-            
+            DrawRay();
+        }
+
+        
+        private void DrawRay()
+        {
             if (!HandInput.Ready)
             {
                 lLineRenderer.enabled = false;
                 rLineRenderer.enabled = false;
+                State = HandPointerState.None;
                 return;
             }
             lLineRenderer.enabled = HandInput.Left.Visible;
             rLineRenderer.enabled = HandInput.Right.Visible;
-
             
-            Vector3 targetPos = Vector3.zero;
+            Vector3 tempTargetPosition = Vector3.zero;
             (bool isValid, Vector3 pos) eyeTrackingTarget = GetEytTrackingTargetPos();
             if (eyeTrackingTarget.isValid)
             {
-                State = HandPointerState.NoSelected;
-                targetPos = eyeTrackingTarget.pos;
+                State = HandPointerState.Valid;
+                tempTargetPosition = eyeTrackingTarget.pos;
             }
             else
             {
                 (bool isValid, Vector3 pos) result = GetHeadTrackingTargetPos();
                 if (result.isValid)
                 {
-                    State = HandPointerState.NoSelected;
-                    targetPos = result.pos;
+                    State = HandPointerState.Valid;
+                    tempTargetPosition = result.pos;
                 }
                 else
                 {
                     State = HandPointerState.None;
                 }
             }
-            targetPos = Vector3.Lerp(lastTargetPos, targetPos, Time.deltaTime * speed);
-            lastTargetPos = targetPos;
+            lastTargetPosition = currentTargetPosition;
+            currentTargetPosition = Vector3.Lerp(lastTargetPosition, tempTargetPosition, Time.deltaTime * speed);
 
             // Rayのスタート位置計算.
+            lastStartPosition = currentStartPosition;
             PointerStartPosition startPosition = new PointerStartPosition()
             {
-                left = Vector3.Lerp(lastStartPos.left, GetRayStartPosition(HandInput.Left), 0.5f),
-                right = Vector3.Lerp(lastStartPos.right, GetRayStartPosition(HandInput.Right), 0.5f)
+                left = Vector3.Lerp(lastStartPosition.left, GetRayStartPosition(HandInput.Left), 0.5f),
+                right = Vector3.Lerp(lastStartPosition.right, GetRayStartPosition(HandInput.Right), 0.5f)
             };
-            lastStartPos = startPosition;
+            currentStartPosition = startPosition;
             
             // Rayの描画、まだRaycastとかはやってない.
-            lLineRenderer.SetPositions(new []{startPosition.left, targetPos});
-            rLineRenderer.SetPositions(new []{startPosition.right, targetPos});
+            lLineRenderer.SetPositions(new []{currentStartPosition.left, currentTargetPosition});
+            rLineRenderer.SetPositions(new []{currentStartPosition.right, currentTargetPosition});
+            
+        }
 
 
-            if (selectFunc != null)
+        (Vector3, GameObject) GetRayCastHitTarget(
+            Ray ray,
+            float maxDistance)
+        {
+            RaycastHit hit;
+            if (Physics.Raycast(ray, out hit, maxDistance))
             {
-                if (selectFunc.Invoke())
-                {
-                    Debug.Log("選択するよ");
-                }
+                return (hit.point, hit.collider.gameObject);
+            }
+            return (Vector3.zero, null);
+        }
+
+
+        /// <summary>
+        /// ハンドジェスチャの変更イベント取得.
+        /// </summary>
+        /// <param name="hand"></param>
+        /// <param name="pose"></param>
+        void OnHandGesturePoseChanged(
+            
+            ManagedHand hand,
+            MLHandTracking.HandKeyPose pose)
+        {
+            State = pose == SelectKeyPose ? HandPointerState.Selected : HandPointerState.NoSelected;
+            Debug.Log($"State : {State}");
+            // 左右それぞれでRaycastとる.
+            if (State == HandPointerState.Selected)
+            {
+                var leftResult = GetRayCastHitTarget(new Ray(currentStartPosition.left, currentTargetPosition - currentStartPosition.left), PointerRayDistance);
+                if (leftResult.Item2 != null)
+                    onSelect?.Invoke(leftResult);
+    
+                var rightResult = GetRayCastHitTarget(new Ray(currentStartPosition.right, currentTargetPosition - currentStartPosition.right), PointerRayDistance);
+                if (rightResult.Item2 != null)
+                    onSelect?.Invoke(rightResult);
             }
         }
 
@@ -182,12 +237,12 @@ namespace SandBox.Scripts.HandPointer
         }
 
 
-        /// <summary>
-        /// 選択する処理を登録する( 何かしらの入力 ).
-        /// </summary>
-        /// <param name="select"></param>
-        public void RegisterSelectProc(Func<bool> select) => selectFunc = select;
-
-
+        public void RegisterOnSelectHandler(
+            UnityAction<(Vector3, GameObject)> callback)
+        {
+            if (onSelect == null)
+                onSelect = new OnSelectEvent();
+            onSelect.AddListener(callback);
+        }
     }
 }
