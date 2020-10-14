@@ -10,5 +10,6 @@ namespace SandBox.Scripts.HandPointer
         MLHandTracking.HandKeyPose SelectKeyPose { get; set; }
         MLHandTracking.HandKeyPose RayDrawKeyPose { get; set; }
         void RegisterOnSelectHandler(UnityAction<(Vector3, GameObject)> handler);
+        void RegisterOnSelectContinueHandler(UnityAction<(Vector3, GameObject)> handler);
     }
 }

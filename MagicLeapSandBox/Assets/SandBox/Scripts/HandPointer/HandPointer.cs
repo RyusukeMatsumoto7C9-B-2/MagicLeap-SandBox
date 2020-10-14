@@ -26,7 +26,6 @@ namespace SandBox.Scripts.HandPointer
         public enum HandPointerState
         {
             None,
-            Valid,
             NoSelected,
             Selected,
         }
@@ -40,6 +39,7 @@ namespace SandBox.Scripts.HandPointer
         public MLHandTracking.HandKeyPose SelectKeyPose { get; set; } = MLHandTracking.HandKeyPose.Pinch;
         public MLHandTracking.HandKeyPose RayDrawKeyPose { get; set; } = MLHandTracking.HandKeyPose.OpenHand;
         OnSelectEvent onSelect = new OnSelectEvent();
+        OnSelectEvent onSelectContinue = new OnSelectEvent();
 
         LineRenderer lLineRenderer;
         LineRenderer rLineRenderer;
@@ -59,15 +59,15 @@ namespace SandBox.Scripts.HandPointer
         {
             if (HandInput.Ready)
             {
-                HandInput.Right.Gesture.OnKeyPoseChanged += OnHandGesturePoseChanged;
-                HandInput.Left.Gesture.OnKeyPoseChanged += OnHandGesturePoseChanged;
+                HandInput.Left.Gesture.OnKeyPoseChanged += OnHandGesturePoseChange;
+                HandInput.Right.Gesture.OnKeyPoseChanged += OnHandGesturePoseChange;
             }
             else
             {
                 HandInput.OnReady += () =>
                 {
-                    HandInput.Right.Gesture.OnKeyPoseChanged += OnHandGesturePoseChanged;
-                    HandInput.Left.Gesture.OnKeyPoseChanged += OnHandGesturePoseChanged;
+                    HandInput.Left.Gesture.OnKeyPoseChanged += OnHandGesturePoseChange;
+                    HandInput.Right.Gesture.OnKeyPoseChanged += OnHandGesturePoseChange;
                 };
             }
 
@@ -82,6 +82,19 @@ namespace SandBox.Scripts.HandPointer
         void Update()
         {
             DrawRay();
+            
+            // TODO : リファクタリング対象,似た様な処理がある.
+            // 左右それぞれでRaycastとる.
+            if (State == HandPointerState.Selected)
+            {
+                var leftResult = GetRayCastHitTarget(new Ray(currentStartPosition.left, currentTargetPosition - currentStartPosition.left), PointerRayDistance);
+                if (leftResult.Item2 != null)
+                    onSelectContinue?.Invoke(leftResult);
+    
+                var rightResult = GetRayCastHitTarget(new Ray(currentStartPosition.right, currentTargetPosition - currentStartPosition.right), PointerRayDistance);
+                if (rightResult.Item2 != null)
+                    onSelectContinue?.Invoke(rightResult);
+            }
         }
 
         
@@ -101,7 +114,6 @@ namespace SandBox.Scripts.HandPointer
             (bool isValid, Vector3 pos) eyeTrackingTarget = GetEytTrackingTargetPos();
             if (eyeTrackingTarget.isValid)
             {
-                State = HandPointerState.Valid;
                 tempTargetPosition = eyeTrackingTarget.pos;
             }
             else
@@ -109,7 +121,6 @@ namespace SandBox.Scripts.HandPointer
                 (bool isValid, Vector3 pos) result = GetHeadTrackingTargetPos();
                 if (result.isValid)
                 {
-                    State = HandPointerState.Valid;
                     tempTargetPosition = result.pos;
                 }
                 else
@@ -154,13 +165,13 @@ namespace SandBox.Scripts.HandPointer
         /// </summary>
         /// <param name="hand"></param>
         /// <param name="pose"></param>
-        void OnHandGesturePoseChanged(
-            
+        void OnHandGesturePoseChange(
             ManagedHand hand,
             MLHandTracking.HandKeyPose pose)
         {
             State = pose == SelectKeyPose ? HandPointerState.Selected : HandPointerState.NoSelected;
-            Debug.Log($"State : {State}");
+
+            // TODO : リファクタリング対象,似た様な処理がある.
             // 左右それぞれでRaycastとる.
             if (State == HandPointerState.Selected)
             {
@@ -172,6 +183,7 @@ namespace SandBox.Scripts.HandPointer
                 if (rightResult.Item2 != null)
                     onSelect?.Invoke(rightResult);
             }
+            Debug.Log($"State : {State}");
         }
 
 
@@ -243,6 +255,15 @@ namespace SandBox.Scripts.HandPointer
             if (onSelect == null)
                 onSelect = new OnSelectEvent();
             onSelect.AddListener(callback);
+        }
+        
+        
+        public void RegisterOnSelectContinueHandler(
+        UnityAction<(Vector3, GameObject)> callback)
+        {
+            if (onSelectContinue == null)
+                onSelectContinue = new OnSelectEvent();
+            onSelectContinue.AddListener(callback);
         }
     }
 }

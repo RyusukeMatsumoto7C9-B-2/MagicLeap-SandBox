@@ -8,6 +8,7 @@ namespace SandBox.Scripts.HandPointer
     public class HandPointerCursor : MonoBehaviour
     {
         [SerializeField] HandPointer pointer;
+        [SerializeField] Transform targetObj;
 
 
         void Start()
@@ -31,6 +32,7 @@ namespace SandBox.Scripts.HandPointer
             (Vector3, GameObject) target)
         {
             Debug.Log($"target : {target.Item2.name}");
+            targetObj.position = target.Item1;
         }
 
    }
