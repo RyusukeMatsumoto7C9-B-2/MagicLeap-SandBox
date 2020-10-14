@@ -1,4 +1,5 @@
-﻿using MagicLeapTools;
+﻿using System;
+using MagicLeapTools;
 using UnityEngine;
 using UnityEngine.XR.MagicLeap;
 
@@ -29,14 +30,17 @@ namespace SandBox.Scripts.HandPointer
 
 
         [SerializeField] Transform mainCamera;
-        [SerializeField] LineRenderer lLineRenderer;
-        [SerializeField] LineRenderer rLineRenderer;
         [SerializeField] float speed = 1f;
 
         public HandPointerState State { get; private set; } = HandPointerState.None;
 
+        LineRenderer lLineRenderer;
+        LineRenderer rLineRenderer;
         PointerStartPosition lastStartPos;
         Vector3 lastTargetPos = Vector3.zero;
+
+        Func<bool> selectFunc;
+
 
         /// <summary>
         /// Eyeトラッキングが有効か否か.
@@ -59,6 +63,7 @@ namespace SandBox.Scripts.HandPointer
         
         void Update()
         {
+            
             if (!HandInput.Ready)
             {
                 lLineRenderer.enabled = false;
@@ -103,6 +108,15 @@ namespace SandBox.Scripts.HandPointer
             // Rayの描画、まだRaycastとかはやってない.
             lLineRenderer.SetPositions(new []{startPosition.left, targetPos});
             rLineRenderer.SetPositions(new []{startPosition.right, targetPos});
+
+
+            if (selectFunc != null)
+            {
+                if (selectFunc.Invoke())
+                {
+                    Debug.Log("選択するよ");
+                }
+            }
         }
 
 
@@ -129,7 +143,6 @@ namespace SandBox.Scripts.HandPointer
         /// <returns></returns>
         Vector3 GetRayStartPosition(ManagedHand hand)
             => Vector3.Lerp(hand.Skeleton.Thumb.Knuckle.positionFiltered, hand.Skeleton.Index.Knuckle.positionFiltered, 0.5f);
-
 
 
         /// <summary>
@@ -167,6 +180,14 @@ namespace SandBox.Scripts.HandPointer
 
             return (true, targetPos);
         }
+
+
+        /// <summary>
+        /// 選択する処理を登録する( 何かしらの入力 ).
+        /// </summary>
+        /// <param name="select"></param>
+        public void RegisterSelectProc(Func<bool> select) => selectFunc = select;
+
 
     }
 }

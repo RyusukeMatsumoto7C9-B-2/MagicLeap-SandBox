@@ -5549,12 +5549,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1935152816}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f41a8c02891b46499105fc84559bfd3f, type: 3}
+  m_Script: {fileID: 11500000, guid: 3c5a29bab9bd68a4eb205a4a0eb5098b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   mainCamera: {fileID: 1049883236}
-  lLineRenderer: {fileID: 0}
-  rLineRenderer: {fileID: 0}
   speed: 3
 --- !u!4 &1981155857 stripped
 Transform:
