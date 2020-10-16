@@ -15,7 +15,11 @@ namespace SandBox.Scripts.HandPointer
         {
             pointer = GetComponent<HandPointer>();
             if (pointer != null)
+            {
                 pointer.RegisterOnSelectHandler(OnSelectHandler);
+                pointer.RegisterOnSelectContinueHandler(OnSelectContinueHandler);
+            }
+
         }
 
 
@@ -35,6 +39,14 @@ namespace SandBox.Scripts.HandPointer
             targetObj.position = target.Item1;
         }
 
-   }
+
+        private void OnSelectContinueHandler(
+            (Vector3, GameObject) target)
+        {
+            Debug.Log($"target : {target.Item2.name}");
+            targetObj.position = target.Item1;
+        }
+
+    }
 }
 
