@@ -55,7 +55,12 @@ namespace SandBox.Scripts.HandPointer
         /// </summary>
         bool IsEyeTrackingValid => MLEyes.IsStarted && MLEyes.CalibrationStatus == MLEyes.Calibration.Good;
 
-        
+        /// <summary>
+        /// 描画しているか否か.
+        /// </summary>
+        public bool IsShow { get; private set; }
+
+
         void Start()
         {
             if (HandInput.Ready)
@@ -102,7 +107,7 @@ namespace SandBox.Scripts.HandPointer
 
         private void DrawRay()
         {
-            if (!HandInput.Ready)
+            if (!HandInput.Ready || !IsShow)
             {
                 lLineRenderer.enabled = false;
                 rLineRenderer.enabled = false;
@@ -147,7 +152,6 @@ namespace SandBox.Scripts.HandPointer
             // Rayの描画、まだRaycastとかはやってない.
             lLineRenderer.SetPositions(new []{currentStartPosition.left, currentTargetPosition});
             rLineRenderer.SetPositions(new []{currentStartPosition.right, currentTargetPosition});
-            
         }
 
 
@@ -162,11 +166,7 @@ namespace SandBox.Scripts.HandPointer
             float maxDistance)
         {
             RaycastHit hit;
-            if (Physics.Raycast(ray, out hit, maxDistance))
-            {
-                return (hit.point, hit.collider.gameObject);
-            }
-            return (Vector3.zero, null);
+            return Physics.Raycast(ray, out hit, maxDistance) ? (hit.point, hit.collider.gameObject) : (Vector3.zero, null);
         }
 
         
@@ -281,6 +281,10 @@ namespace SandBox.Scripts.HandPointer
         }
 
 
+        /// <summary>
+        /// 選択のイベントハンドラを登録.
+        /// </summary>
+        /// <param name="callback"></param>
         public void RegisterOnSelectHandler(
             UnityAction<(Vector3, GameObject)> callback)
         {
@@ -290,6 +294,10 @@ namespace SandBox.Scripts.HandPointer
         }
         
         
+        /// <summary>
+        /// 長選択のイベントハンドラを登録.
+        /// </summary>
+        /// <param name="callback"></param>
         public void RegisterOnSelectContinueHandler(
             UnityAction<(Vector3, GameObject)> callback)
         {
@@ -297,5 +305,17 @@ namespace SandBox.Scripts.HandPointer
                 onSelectContinue = new OnSelectEvent();
             onSelectContinue.AddListener(callback);
         }
+
+
+        /// <summary>
+        /// HandPointerを有効化.
+        /// </summary>
+        public void Show() => IsShow = true;
+
+
+        /// <summary>
+        /// HandPointerを無効化.
+        /// </summary>
+        public void Hide() => IsShow = false;
     }
 }
