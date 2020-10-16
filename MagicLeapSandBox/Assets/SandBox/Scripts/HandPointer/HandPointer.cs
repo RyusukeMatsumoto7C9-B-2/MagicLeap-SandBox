@@ -34,7 +34,8 @@ namespace SandBox.Scripts.HandPointer
         [SerializeField] Transform mainCamera;
         [SerializeField] float speed = 1f;
 
-        public HandPointerState State { get; private set; } = HandPointerState.None;
+        public HandPointerState LefttHandSate { get; private set; } = HandPointerState.None;
+        public HandPointerState RightHandState { get; private set; } = HandPointerState.None;
         public float PointerRayDistance { get; set; } = 2f;
         public MLHandTracking.HandKeyPose SelectKeyPose { get; set; } = MLHandTracking.HandKeyPose.Pinch;
         public MLHandTracking.HandKeyPose RayDrawKeyPose { get; set; } = MLHandTracking.HandKeyPose.OpenHand;
@@ -85,26 +86,31 @@ namespace SandBox.Scripts.HandPointer
             
             // TODO : リファクタリング対象,似た様な処理がある.
             // 左右それぞれでRaycastとる.
-            if (State == HandPointerState.Selected)
+            
+            if (LefttHandSate == HandPointerState.Selected)
             {
-                var leftResult = GetRayCastHitTarget(new Ray(currentStartPosition.left, currentTargetPosition - currentStartPosition.left), PointerRayDistance);
-                if (leftResult.Item2 != null)
-                    onSelectContinue?.Invoke(leftResult);
-    
-                var rightResult = GetRayCastHitTarget(new Ray(currentStartPosition.right, currentTargetPosition - currentStartPosition.right), PointerRayDistance);
-                if (rightResult.Item2 != null)
-                    onSelectContinue?.Invoke(rightResult);
+                var result = GetSelect(MLHandTracking.HandType.Left);
+                if (result.Item2 != null)
+                    onSelectContinue?.Invoke(result);
+            }
+            
+            if (RightHandState == HandPointerState.Selected)
+            {
+                var result = GetSelect(MLHandTracking.HandType.Right);
+                if (result.Item2 != null)
+                    onSelectContinue?.Invoke(result);
             }
         }
 
-        
+
         private void DrawRay()
         {
             if (!HandInput.Ready)
             {
                 lLineRenderer.enabled = false;
                 rLineRenderer.enabled = false;
-                State = HandPointerState.None;
+                LefttHandSate = HandPointerState.None;
+                RightHandState = HandPointerState.None;
                 return;
             }
             lLineRenderer.enabled = HandInput.Left.Visible;
@@ -125,7 +131,8 @@ namespace SandBox.Scripts.HandPointer
                 }
                 else
                 {
-                    State = HandPointerState.None;
+                    LefttHandSate = HandPointerState.None;
+                    RightHandState = HandPointerState.None;
                 }
             }
             lastTargetPosition = currentTargetPosition;
@@ -147,6 +154,12 @@ namespace SandBox.Scripts.HandPointer
         }
 
 
+        /// <summary>
+        /// RaycastHitしたターゲットを返す、ヒットしない場合は Item2 はnullになる.
+        /// </summary>
+        /// <param name="ray"></param>
+        /// <param name="maxDistance"></param>
+        /// <returns></returns>
         (Vector3, GameObject) GetRayCastHitTarget(
             Ray ray,
             float maxDistance)
@@ -159,6 +172,19 @@ namespace SandBox.Scripts.HandPointer
             return (Vector3.zero, null);
         }
 
+        
+        /// <summary>
+        /// 選択したターゲットを取得する,洗濯できていない場合は Item2 はnullになる.
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        (Vector3, GameObject) GetSelect(
+            MLHandTracking.HandType type)
+        {
+            Vector3 startPosition = (type == MLHandTracking.HandType.Left) ? currentStartPosition.left : currentStartPosition.right;
+            return GetRayCastHitTarget(new Ray(startPosition, currentTargetPosition - startPosition), PointerRayDistance);
+        }
+
 
         /// <summary>
         /// ハンドジェスチャの変更イベント取得.
@@ -169,21 +195,30 @@ namespace SandBox.Scripts.HandPointer
             ManagedHand hand,
             MLHandTracking.HandKeyPose pose)
         {
-            State = pose == SelectKeyPose ? HandPointerState.Selected : HandPointerState.NoSelected;
-
-            // TODO : リファクタリング対象,似た様な処理がある.
-            // 左右それぞれでRaycastとる.
-            if (State == HandPointerState.Selected)
+            switch (hand.Hand.Type)
             {
-                var leftResult = GetRayCastHitTarget(new Ray(currentStartPosition.left, currentTargetPosition - currentStartPosition.left), PointerRayDistance);
-                if (leftResult.Item2 != null)
-                    onSelect?.Invoke(leftResult);
-    
-                var rightResult = GetRayCastHitTarget(new Ray(currentStartPosition.right, currentTargetPosition - currentStartPosition.right), PointerRayDistance);
-                if (rightResult.Item2 != null)
-                    onSelect?.Invoke(rightResult);
+                case MLHandTracking.HandType.Left:
+                    LefttHandSate = pose == SelectKeyPose ? HandPointerState.Selected : HandPointerState.NoSelected;
+                    break;
+                
+                case MLHandTracking.HandType.Right:
+                    RightHandState = pose == SelectKeyPose ? HandPointerState.Selected : HandPointerState.NoSelected;
+                    break;
             }
-            Debug.Log($"State : {State}");
+
+            if (LefttHandSate == HandPointerState.Selected)
+            {
+                var result = GetSelect(MLHandTracking.HandType.Left);
+                if (result.Item2 != null)
+                    onSelect?.Invoke(result);
+            }
+            
+            if (RightHandState == HandPointerState.Selected)
+            {
+                var result = GetSelect(MLHandTracking.HandType.Right);
+                if (result.Item2 != null)
+                    onSelect?.Invoke(result);
+            }
         }
 
 
@@ -259,7 +294,7 @@ namespace SandBox.Scripts.HandPointer
         
         
         public void RegisterOnSelectContinueHandler(
-        UnityAction<(Vector3, GameObject)> callback)
+            UnityAction<(Vector3, GameObject)> callback)
         {
             if (onSelectContinue == null)
                 onSelectContinue = new OnSelectEvent();
