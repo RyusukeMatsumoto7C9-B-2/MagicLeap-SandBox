@@ -84,9 +84,6 @@ namespace SandBox.Scripts.HandPointer
         {
             DrawRay();
             
-            // TODO : リファクタリング対象,似た様な処理がある.
-            // 左右それぞれでRaycastとる.
-            
             if (LefttHandSate == HandPointerState.Selected)
             {
                 var result = GetSelect(MLHandTracking.HandType.Left);
