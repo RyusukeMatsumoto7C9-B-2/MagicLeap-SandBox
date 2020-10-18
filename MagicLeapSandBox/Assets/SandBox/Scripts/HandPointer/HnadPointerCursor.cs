@@ -30,8 +30,13 @@ namespace SandBox.Scripts.HandPointer
                 Hide();
                 return;
             }
-            Show();                
+            Show();
 
+            RaycastHit hit;
+            var ray = new Ray(startPosition, endPosition - startPosition);
+            if (Physics.Raycast(ray, out hit, Vector3.Distance(startPosition, endPosition)))
+                endPosition = hit.point;
+            
             lineRenderer.SetPositions(new []{startPosition, endPosition});
                 
             // ここでカーソルに適用.
