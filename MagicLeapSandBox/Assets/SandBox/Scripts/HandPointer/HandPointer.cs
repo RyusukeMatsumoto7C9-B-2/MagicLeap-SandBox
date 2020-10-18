@@ -205,7 +205,7 @@ namespace SandBox.Scripts.HandPointer
 
         
         /// <summary>
-        /// 選択したターゲットを取得する,洗濯できていない場合は Item2 はnullになる.
+        /// 選択したターゲットを取得する,選択できていない場合は Item2 はnullになる.
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
