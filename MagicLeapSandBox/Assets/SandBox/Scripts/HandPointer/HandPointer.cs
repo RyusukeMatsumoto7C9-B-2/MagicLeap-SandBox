@@ -35,21 +35,27 @@ namespace SandBox.Scripts.HandPointer
         [SerializeField] float speed = 1f;
         [SerializeField] GameObject cursorPrefab; // ポインターの先端に配置するカーソルのプレハブ,設定されていなければ利用しない.
 
-        public HandPointerState LefttHandSate { get; private set; } = HandPointerState.None;
-        public HandPointerState RightHandState { get; private set; } = HandPointerState.None;
         public float PointerRayDistance { get; set; } = 2f;
         public MLHandTracking.HandKeyPose SelectKeyPose { get; set; } = MLHandTracking.HandKeyPose.Pinch;
         public MLHandTracking.HandKeyPose RayDrawKeyPose { get; set; } = MLHandTracking.HandKeyPose.OpenHand;
         OnSelectEvent onSelect = new OnSelectEvent();
         OnSelectEvent onSelectContinue = new OnSelectEvent();
 
-        LineRenderer lLineRenderer;
-        LineRenderer rLineRenderer;
         Vector3 lastTargetPosition = Vector3.zero;
         Vector3 currentTargetPosition = Vector3.zero;
         PointerStartPosition lastStartPosition;
         PointerStartPosition currentStartPosition;
 
+        // このデータをまとめられそう
+        LineRenderer lLineRenderer;
+        LineRenderer rLineRenderer;
+
+        public HandPointerState LeftHandSate { get; private set; } = HandPointerState.None;
+        public HandPointerState RightHandState { get; private set; } = HandPointerState.None;
+        
+        //
+        
+        
         
         /// <summary>
         /// Eyeトラッキングが有効か否か.
@@ -92,7 +98,7 @@ namespace SandBox.Scripts.HandPointer
         {
             DrawRay();
             
-            if (LefttHandSate == HandPointerState.Selected)
+            if (LeftHandSate == HandPointerState.Selected)
             {
                 var result = GetSelect(MLHandTracking.HandType.Left);
                 if (result.Item2 != null)
@@ -114,14 +120,12 @@ namespace SandBox.Scripts.HandPointer
         void CreateCursor()
         {
             if (cursorPrefab == null) return;
-
+            
+            // TODO : 一旦カーソルの処理作成は中断、先にポインターの処理をいい感じにリファクタリングする.
             var leftCursor = Instantiate(cursorPrefab, transform);
             leftCursor.name = "LeftCursor";
             var rightCursor = Instantiate(cursorPrefab, transform);
             rightCursor.name = "RightCursor";
-            
-            
-
         }
 
 
@@ -131,7 +135,7 @@ namespace SandBox.Scripts.HandPointer
             {
                 lLineRenderer.enabled = false;
                 rLineRenderer.enabled = false;
-                LefttHandSate = HandPointerState.None;
+                LeftHandSate = HandPointerState.None;
                 RightHandState = HandPointerState.None;
                 return;
             }
@@ -153,7 +157,7 @@ namespace SandBox.Scripts.HandPointer
                 }
                 else
                 {
-                    LefttHandSate = HandPointerState.None;
+                    LeftHandSate = HandPointerState.None;
                     RightHandState = HandPointerState.None;
                 }
             }
@@ -215,7 +219,7 @@ namespace SandBox.Scripts.HandPointer
             switch (hand.Hand.Type)
             {
                 case MLHandTracking.HandType.Left:
-                    LefttHandSate = pose == SelectKeyPose ? HandPointerState.Selected : HandPointerState.NoSelected;
+                    LeftHandSate = pose == SelectKeyPose ? HandPointerState.Selected : HandPointerState.NoSelected;
                     break;
                 
                 case MLHandTracking.HandType.Right:
@@ -223,7 +227,7 @@ namespace SandBox.Scripts.HandPointer
                     break;
             }
 
-            if (LefttHandSate == HandPointerState.Selected)
+            if (LeftHandSate == HandPointerState.Selected)
             {
                 var result = GetSelect(MLHandTracking.HandType.Left);
                 if (result.Item2 != null)
