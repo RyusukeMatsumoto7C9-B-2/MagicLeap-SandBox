@@ -30,13 +30,18 @@ namespace SandBox.Scripts.HandPointer
 
             public void SetTarget(Vector3 target) => Target = target;
         
-            public void CopyStartPosition(PointerPosition src)
+            
+            public void CopyStartPosition(
+                PointerPosition src)
             {
                 LeftStart = src.LeftStart;
                 RightStart = src.RightStart;
             }
 
-            public void SetStartPosition(Vector3 left, Vector3 right)
+            
+            public void SetStartPosition(
+                Vector3 left,
+                Vector3 right)
             {
                 LeftStart = left;
                 RightStart = right;
