@@ -33,6 +33,7 @@ namespace SandBox.Scripts.HandPointer
 
         [SerializeField] Transform mainCamera;
         [SerializeField] float speed = 1f;
+        [SerializeField] GameObject cursorPrefab; // ポインターの先端に配置するカーソルのプレハブ,設定されていなければ利用しない.
 
         public HandPointerState LefttHandSate { get; private set; } = HandPointerState.None;
         public HandPointerState RightHandState { get; private set; } = HandPointerState.None;
@@ -81,6 +82,8 @@ namespace SandBox.Scripts.HandPointer
             lLineRenderer = CreateLineRenderer("LeftLineRenderer");
             rLineRenderer = CreateLineRenderer("RightLineRenderer");
             
+            CreateCursor();
+
             lastStartPosition = new PointerStartPosition() {left = Vector3.zero, right = Vector3.zero};
         }
 
@@ -102,6 +105,23 @@ namespace SandBox.Scripts.HandPointer
                 if (result.Item2 != null)
                     onSelectContinue?.Invoke(result);
             }
+        }
+
+
+        /// <summary>
+        /// HandPointerのカーソル生成.
+        /// </summary>
+        void CreateCursor()
+        {
+            if (cursorPrefab == null) return;
+
+            var leftCursor = Instantiate(cursorPrefab, transform);
+            leftCursor.name = "LeftCursor";
+            var rightCursor = Instantiate(cursorPrefab, transform);
+            rightCursor.name = "RightCursor";
+            
+            
+
         }
 
 
