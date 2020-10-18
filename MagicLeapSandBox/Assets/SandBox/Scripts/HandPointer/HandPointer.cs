@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using MagicLeapTools;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.WSA;
 using UnityEngine.XR.MagicLeap;
 
 namespace SandBox.Scripts.HandPointer
@@ -13,15 +14,37 @@ namespace SandBox.Scripts.HandPointer
     /// </summary>
     public class HandPointer : MonoBehaviour, IHandPointer
     {
-        public class OnSelectEvent : UnityEvent<(Vector3, GameObject)> { }
 
-        private struct PointerStartPosition
+        #region --- class OnSelectEvent ---
+        class OnSelectEvent : UnityEvent<(Vector3, GameObject)> { }
+        #endregion --- class OnSelectEvent ---
+
+        
+        #region --- class PointerPosition ---
+        class PointerPosition
         {
-            public Vector3 left;
-            public Vector3 right;
+            public Vector3 LeftStart { get; private set; } = Vector3.zero;
+            public Vector3 RightStart { get; private set; } = Vector3.zero;
+            public Vector3 Target { get; private set; } = Vector3.zero;
+
+
+            public void SetTarget(Vector3 target) => Target = target;
+        
+            public void CopyStartPosition(PointerPosition src)
+            {
+                LeftStart = src.LeftStart;
+                RightStart = src.RightStart;
+            }
+
+            public void SetStartPosition(Vector3 left, Vector3 right)
+            {
+                LeftStart = left;
+                RightStart = right;
+            }
         }
+        #endregion --- class PointerPosition ---
 
-
+        
         // Pointerのステート.
         public enum HandPointerState
         {
@@ -38,25 +61,16 @@ namespace SandBox.Scripts.HandPointer
         public float PointerRayDistance { get; set; } = 2f;
         public MLHandTracking.HandKeyPose SelectKeyPose { get; set; } = MLHandTracking.HandKeyPose.Pinch;
         public MLHandTracking.HandKeyPose RayDrawKeyPose { get; set; } = MLHandTracking.HandKeyPose.OpenHand;
+        public HandPointerState LeftHandState { get; private set; } = HandPointerState.None;
+        public HandPointerState RightHandState { get; private set; } = HandPointerState.None;
+
         OnSelectEvent onSelect = new OnSelectEvent();
         OnSelectEvent onSelectContinue = new OnSelectEvent();
+        PointerPosition lastPointerPosition;
+        PointerPosition currentPointerPosition;
+        HandPointerCursor leftCursor;
+        HandPointerCursor rightCursor;
 
-        Vector3 lastTargetPosition = Vector3.zero;
-        Vector3 currentTargetPosition = Vector3.zero;
-        PointerStartPosition lastStartPosition;
-        PointerStartPosition currentStartPosition;
-
-        // このデータをまとめられそう
-        LineRenderer lLineRenderer;
-        LineRenderer rLineRenderer;
-
-        public HandPointerState LeftHandSate { get; private set; } = HandPointerState.None;
-        public HandPointerState RightHandState { get; private set; } = HandPointerState.None;
-        
-        //
-        
-        
-        
         /// <summary>
         /// Eyeトラッキングが有効か否か.
         /// </summary>
@@ -65,7 +79,7 @@ namespace SandBox.Scripts.HandPointer
         /// <summary>
         /// 描画しているか否か.
         /// </summary>
-        public bool IsShow { get; private set; }
+        public bool IsShow { get; private set; } = true;
 
 
         void Start()
@@ -85,12 +99,12 @@ namespace SandBox.Scripts.HandPointer
             }
 
             MLEyes.Start();
-            lLineRenderer = CreateLineRenderer("LeftLineRenderer");
-            rLineRenderer = CreateLineRenderer("RightLineRenderer");
-            
-            CreateCursor();
 
-            lastStartPosition = new PointerStartPosition() {left = Vector3.zero, right = Vector3.zero};
+            leftCursor = new HandPointerCursor(CreateLineRenderer("LeftLineRenderer"), CreateCursor("LeftHandCursor"));
+            rightCursor = new HandPointerCursor(CreateLineRenderer("RightLineRenderer"), CreateCursor("RightHandCursor"));
+            
+            currentPointerPosition = new PointerPosition();
+            lastPointerPosition = new PointerPosition();
         }
 
         
@@ -98,7 +112,7 @@ namespace SandBox.Scripts.HandPointer
         {
             DrawRay();
             
-            if (LeftHandSate == HandPointerState.Selected)
+            if (LeftHandState == HandPointerState.Selected)
             {
                 var result = GetSelect(MLHandTracking.HandType.Left);
                 if (result.Item2 != null)
@@ -117,15 +131,13 @@ namespace SandBox.Scripts.HandPointer
         /// <summary>
         /// HandPointerのカーソル生成.
         /// </summary>
-        void CreateCursor()
+        GameObject CreateCursor(
+            string name)
         {
-            if (cursorPrefab == null) return;
-            
-            // TODO : 一旦カーソルの処理作成は中断、先にポインターの処理をいい感じにリファクタリングする.
-            var leftCursor = Instantiate(cursorPrefab, transform);
-            leftCursor.name = "LeftCursor";
-            var rightCursor = Instantiate(cursorPrefab, transform);
-            rightCursor.name = "RightCursor";
+            if (cursorPrefab == null) return null;
+            GameObject cursor = Instantiate(cursorPrefab, transform);
+            cursor.name = name;
+            return cursor;
         }
 
 
@@ -133,14 +145,11 @@ namespace SandBox.Scripts.HandPointer
         {
             if (!HandInput.Ready || !IsShow)
             {
-                lLineRenderer.enabled = false;
-                rLineRenderer.enabled = false;
-                LeftHandSate = HandPointerState.None;
-                RightHandState = HandPointerState.None;
+                LeftHandState = RightHandState = HandPointerState.None;
                 return;
             }
-            lLineRenderer.enabled = HandInput.Left.Visible;
-            rLineRenderer.enabled = HandInput.Right.Visible;
+            LeftHandState = HandInput.Left.Visible ? LeftHandState: HandPointerState.None;
+            RightHandState = HandInput.Right.Visible ? RightHandState: HandPointerState.None;
             
             Vector3 tempTargetPosition = Vector3.zero;
             (bool isValid, Vector3 pos) eyeTrackingTarget = GetEytTrackingTargetPos();
@@ -157,25 +166,21 @@ namespace SandBox.Scripts.HandPointer
                 }
                 else
                 {
-                    LeftHandSate = HandPointerState.None;
-                    RightHandState = HandPointerState.None;
+                    LeftHandState = RightHandState = HandPointerState.None;
                 }
             }
-            lastTargetPosition = currentTargetPosition;
-            currentTargetPosition = Vector3.Lerp(lastTargetPosition, tempTargetPosition, Time.deltaTime * speed);
+            lastPointerPosition.SetTarget(currentPointerPosition.Target);
+            currentPointerPosition.SetTarget(Vector3.Lerp(lastPointerPosition.Target, tempTargetPosition, Time.deltaTime * speed));
 
             // Rayのスタート位置計算.
-            lastStartPosition = currentStartPosition;
-            PointerStartPosition startPosition = new PointerStartPosition()
-            {
-                left = Vector3.Lerp(lastStartPosition.left, GetRayStartPosition(HandInput.Left), 0.5f),
-                right = Vector3.Lerp(lastStartPosition.right, GetRayStartPosition(HandInput.Right), 0.5f)
-            };
-            currentStartPosition = startPosition;
-            
-            // Rayの描画、まだRaycastとかはやってない.
-            lLineRenderer.SetPositions(new []{currentStartPosition.left, currentTargetPosition});
-            rLineRenderer.SetPositions(new []{currentStartPosition.right, currentTargetPosition});
+            lastPointerPosition.CopyStartPosition(currentPointerPosition);
+            currentPointerPosition.SetStartPosition(
+                Vector3.Lerp(lastPointerPosition.LeftStart, GetRayStartPosition(HandInput.Left), 0.5f),
+                Vector3.Lerp(lastPointerPosition.RightStart, GetRayStartPosition(HandInput.Right), 0.5f));
+
+            // カーソルの更新.
+            leftCursor.Update(LeftHandState, currentPointerPosition.LeftStart, currentPointerPosition.Target);
+            rightCursor.Update(RightHandState, currentPointerPosition.RightStart, currentPointerPosition.Target);
         }
 
 
@@ -202,8 +207,8 @@ namespace SandBox.Scripts.HandPointer
         (Vector3, GameObject) GetSelect(
             MLHandTracking.HandType type)
         {
-            Vector3 startPosition = (type == MLHandTracking.HandType.Left) ? currentStartPosition.left : currentStartPosition.right;
-            return GetRayCastHitTarget(new Ray(startPosition, currentTargetPosition - startPosition), PointerRayDistance);
+            Vector3 startPosition = (type == MLHandTracking.HandType.Left) ? currentPointerPosition.LeftStart : currentPointerPosition.RightStart;
+            return GetRayCastHitTarget(new Ray(startPosition, currentPointerPosition.Target - startPosition), PointerRayDistance);
         }
 
 
@@ -219,7 +224,7 @@ namespace SandBox.Scripts.HandPointer
             switch (hand.Hand.Type)
             {
                 case MLHandTracking.HandType.Left:
-                    LeftHandSate = pose == SelectKeyPose ? HandPointerState.Selected : HandPointerState.NoSelected;
+                    LeftHandState = pose == SelectKeyPose ? HandPointerState.Selected : HandPointerState.NoSelected;
                     break;
                 
                 case MLHandTracking.HandType.Right:
@@ -227,7 +232,7 @@ namespace SandBox.Scripts.HandPointer
                     break;
             }
 
-            if (LeftHandSate == HandPointerState.Selected)
+            if (LeftHandState == HandPointerState.Selected)
             {
                 var result = GetSelect(MLHandTracking.HandType.Left);
                 if (result.Item2 != null)

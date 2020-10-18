@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace SandBox.Scripts.HandPointer
 {
-    public class HandPointerCursor : MonoBehaviour
+    public class HandPointerTest : MonoBehaviour
     {
         [SerializeField] HandPointer pointer;
         [SerializeField] Transform targetObj;
