@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using MagicLeapTools;
+﻿using MagicLeapTools;
 using UnityEngine;
 using UnityEngine.Events;
-using UnityEngine.WSA;
 using UnityEngine.XR.MagicLeap;
 
 namespace SandBox.Scripts.HandPointer
@@ -12,6 +9,7 @@ namespace SandBox.Scripts.HandPointer
     /// ハンドトラッキングでのポインター.
     /// こいつだけで両手分の処理を行いたい.
     /// </summary>
+    
     public class HandPointer : MonoBehaviour, IHandPointer
     {
 
@@ -146,7 +144,7 @@ namespace SandBox.Scripts.HandPointer
         }
 
 
-        private void DrawRay()
+        void DrawRay()
         {
             if (!HandInput.Ready || !IsShow)
             {
